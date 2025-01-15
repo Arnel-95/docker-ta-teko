@@ -17,13 +17,15 @@ services:
   publisher:
     image: nikola4/stock-publisher:latest
     container_name: stock-publisher
-    # RabbitMQ URL via Umgebungsvariable
+    
     environment:
       - RABBITMQ_URL=amqp://admin:password@rabbitmq:5672/
     depends_on:
       - rabbitmq
     networks:
       - finance_net
+    restart: always
+
 # Mongo Datebanken Service
   mongo1:
     image: mongo:6.0
@@ -53,6 +55,8 @@ services:
       - ./data/mongo1:/data/db
       - ./data/mongo1_config:/data/configdb
 
+    restart: always
+
 
   mongo2:
     image: mongo:6.0
@@ -80,6 +84,8 @@ services:
     volumes:
       - ./data/mongo2:/data/db
       - ./data/mongo1_config:/data/configdb
+
+    restart: always
 
 
   mongo3:
@@ -109,6 +115,8 @@ services:
       - ./data/mongo3:/data/db
       - ./data/mongo1_config:/data/configdb
 
+    restart: always
+
 
 #Frontend Services
   frontend1:
@@ -123,6 +131,8 @@ services:
     networks:
       - finance_net
 
+    restart: always
+
   frontend2:
     image: nikola4/stock-liveview:latest
     container_name: frontend2
@@ -134,6 +144,8 @@ services:
       - mongo3
     networks:
       - finance_net
+
+    restart: always
 
 #Nginx Load Balancer
   loadbalancer:
@@ -148,6 +160,7 @@ services:
       - ./loadbalancer/nginx.conf:/etc/nginx/nginx.conf:ro
     networks:
       - finance_net
+    restart: always
 
 #Consumer
   consumer-aapl:
@@ -164,6 +177,7 @@ services:
       - mongo3
     networks:
       - finance_net
+    restart: always
 
   consumer-msft:
     image: nikola4/stock-consumer:latest
@@ -179,6 +193,7 @@ services:
       - mongo3
     networks:
       - finance_net
+    restart: always
 
   consumer-tsla:
     image: nikola4/stock-consumer:latest
@@ -194,6 +209,8 @@ services:
       - mongo3
     networks:
       - finance_net
+    restart: always
+
 networks:
   finance_net:
     driver: bridge

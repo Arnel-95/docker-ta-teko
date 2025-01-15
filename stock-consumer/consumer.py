@@ -5,7 +5,7 @@ import json
 from pymongo import MongoClient
 
 BATCH_SIZE = 1000
-RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672/")
+RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://admin:password@rabbitmq:5672/")
 QUEUE_NAME   = os.getenv("RABBITMQ_QUEUE", "AAPL")
 MONGODB_URL  = os.getenv("MONGODB_URL", "mongodb://mongo1:27017/?replicaSet=rs0")
 
