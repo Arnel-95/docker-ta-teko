@@ -1,0 +1,158 @@
+version: "3.8"
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: arniki
+      RABBITMQ_DEFAULT_PASS: Oftringen
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - finance_net
+
+  producer:
+    build:
+      context: ./producer
+    container_name: stock-publisher
+    environment:
+      - RABBITMQ_URL=amqp://arniki:Oftringen@rabbitmq:5672/
+    depends_on:
+      - rabbitmq
+    networks:
+      - finance_net
+
+  mongo1:
+    image: mongo:6.0
+    container_name: mongo1
+    command: ["mongod", "--replSet", "rs0"]
+    ports:
+      - "27017:27017"
+    networks:
+      - finance_net
+    volumes:
+      - ./data/mongo1:/data/db
+      - ./data/mongo1_config:/data/configdb
+
+  mongo2:
+    image: mongo:6.0
+    container_name: mongo2
+    command: ["mongod", "--replSet", "rs0"]
+    ports:
+      - "27018:27017"
+    networks:
+      - finance_net
+    volumes:
+      - ./data/mongo2:/data/db
+      - ./data/mongo2_config:/data/configdb
+
+  mongo3:
+    image: mongo:6.0
+    container_name: mongo3
+    command: ["mongod", "--replSet", "rs0"]
+    ports:
+      - "27019:27017"
+    networks:
+      - finance_net
+    volumes:
+      - ./data/mongo3:/data/db
+      - ./data/mongo3_config:/data/configdb
+        
+
+  frontend1:
+    build:
+      context: ./frontend
+    container_name: frontend1
+    restart: always
+    environment:
+      - MONGODB_URL=mongodb://mongo1:27017,mongo2:27017,mongo3:27017/stockmarket?replicaSet=rs0
+    depends_on:
+      - mongo1
+      - mongo2
+      - mongo3
+    networks:
+      - finance_net
+
+  frontend2:
+    build:
+      context: ./frontend
+    container_name: frontend2
+    restart: always
+    environment:
+      - MONGODB_URL=mongodb://mongo1:27017,mongo2:27017,mongo3:27017/stockmarket?replicaSet=rs0
+    depends_on:
+      - mongo1
+      - mongo2
+      - mongo3
+    networks:
+      - finance_net
+
+  loadbalancer:
+    image: nginx:alpine
+    container_name: loadbalancer
+    volumes:
+      - ./loadbalancer/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend1
+      - frontend2
+    ports:
+      - "80:80"
+    networks:
+      - finance_net
+
+  consumer-aapl:
+    build:
+      context: ./consumer
+    container_name: consumer-aapl
+    restart: always
+    environment:
+      - RABBITMQ_URL=amqp://arniki:Oftringen@rabbitmq:5672
+      - RABBITMQ_QUEUE=AAPL
+      - MONGODB_URL=mongodb://mongo1:27017,mongo2:27017,mongo3:27017/stockmarket?replicaSet=rs0
+    depends_on:
+      - rabbitmq
+      - mongo1
+      - mongo2
+      - mongo3
+    networks:
+      - finance_net
+
+  consumer-msft:
+    build:
+      context: ./consumer
+    container_name: consumer-msft
+    restart: always
+    environment:
+      - RABBITMQ_URL=amqp://arniki:Oftringen@rabbitmq:5672
+      - RABBITMQ_QUEUE=MSFT
+      - MONGODB_URL=mongodb://mongo1:27017,mongo2:27017,mongo3:270t17/stockmarket?replicaSet=rs0
+    depends_on:
+      - rabbitmq
+      - mongo1
+      - mongo2
+      - mongo3
+    networks:
+      - finance_net
+
+  consumer-tsla:
+    build:
+      context: ./consumer
+    container_name: consumer-tsla
+    restart: always
+    environment:
+      - RABBITMQ_URL=amqp://arniki:Oftringen@rabbitmq:5672
+      - RABBITMQ_QUEUE=TSLA
+      - MONGODB_URL=mongodb://mongo1:27017,mongo2:27017,mongo3:27017/stockmarket?replicaSet=rs0
+    depends_on:
+      - rabbitmq
+      - mongo1
+      - mongo2
+      - mongo3
+    networks:
+      - finance_net
+
+networks:
+  finance_net:
+    driver: bridge
