@@ -13,7 +13,7 @@ services:
       - finance_net
 #Publisher Service
   publisher:
-    image: arnel95/stock-publisher:latest
+    image: nikola4/stock-publisher:latest
     container_name: stock-publisher
     # RabbitMQ URL via Umgebungsvariable
     environment:
@@ -58,7 +58,7 @@ services:
 
 #Frontend Services
   frontend1:
-    image: arnel95/stock-liveview:latest
+    image: nikola4/stock-liveview:latest
     container_name: frontend1
     environment:
       - MONGO_URL=mongodb://mongo1:27017,mongo2:27017,mongo3:27017/stockmarket?replicaSet=rs0
@@ -70,7 +70,7 @@ services:
       - finance_net
 
   frontend2:
-    image: arnel95/stock-liveview:latest
+    image: nikola4/stock-liveview:latest
     container_name: frontend2
     environment:
       - MONGO_URL=mongodb://mongo1:27017,mongo2:27017,mongo3:27017/stockmarket?replicaSet=rs0
@@ -97,7 +97,7 @@ services:
 
 #Consumer
   consumer-aapl:
-    image: arnel95/stock-consumer:latest
+    image: nikola4/stock-consumer:latest
     container_name: consumer-aapl
     environment:
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
@@ -112,7 +112,7 @@ services:
       - finance_net
 
   consumer-msft:
-    image: arnel95/stock-consumer:latest
+    image: nikola4/stock-consumer:latest
     container_name: consumer-msft
     environment:
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
@@ -127,7 +127,7 @@ services:
       - finance_net
 
   consumer-tsla:
-    image: arnel95/stock-consumer:latest
+    image: nikola4/stock-consumer:latest
     container_name: consumer-tsla
     environment:
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
