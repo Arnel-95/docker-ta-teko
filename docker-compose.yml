@@ -11,6 +11,8 @@ services:
       - "15672:15672"   # Management-UI
     networks:
       - finance_net
+    restart: always
+
 #Publisher Service
   publisher:
     image: nikola4/stock-publisher:latest
@@ -25,6 +27,22 @@ services:
 # Mongo Datebanken Service
   mongo1:
     image: mongo:6.0
+
+    healthcheck:
+      test: >-
+        echo "try { rs.status() } catch (err) {
+        rs.initiate({_id:'rs0',members:[
+        {_id:0,host:'host.docker.internal:27017',priority:1},
+        {_id:1,host:'host.docker.internal:27018',priority:0.5},
+        {_id:2,host:'host.docker.internal:27019',priority:0.5}
+         ]})
+         }" | mongosh --port 27017 --quiet
+      interval: 5s
+      timeout: 30s
+      retries: 30
+      start_interval: 1s
+      start_period: 0s
+
     container_name: mongo1
     command: ["mongod", "--replSet", "rs0"]
     ports:
@@ -33,9 +51,26 @@ services:
       - finance_net
     volumes:
       - ./data/mongo1:/data/db
+      - ./data/mongo1_config:/data/configdb
+
 
   mongo2:
     image: mongo:6.0
+    healthcheck:
+      test: >-
+        echo "try { rs.status() } catch (err) {
+        rs.initiate({_id:'rs0',members:[
+        {_id:0,host:'host.docker.internal:27017',priority:1},
+        {_id:1,host:'host.docker.internal:27018',priority:0.5},
+        {_id:2,host:'host.docker.internal:27019',priority:0.5}
+         ]})
+         }" | mongosh --port 27017 --quiet
+      interval: 5s
+      timeout: 30s
+      retries: 30
+      start_interval: 1s
+      start_period: 0s
+
     container_name: mongo2
     command: ["mongod", "--replSet", "rs0"]
     ports:
@@ -44,9 +79,26 @@ services:
       - finance_net
     volumes:
       - ./data/mongo2:/data/db
+      - ./data/mongo1_config:/data/configdb
+
 
   mongo3:
     image: mongo:6.0
+    healthcheck:
+      test: >-
+        echo "try { rs.status() } catch (err) {
+        rs.initiate({_id:'rs0',members:[
+        {_id:0,host:'host.docker.internal:27017',priority:1},
+        {_id:1,host:'host.docker.internal:27018',priority:0.5},
+        {_id:2,host:'host.docker.internal:27019',priority:0.5}
+         ]})
+         }" | mongosh --port 27017 --quiet
+      interval: 5s
+      timeout: 30s
+      retries: 30
+      start_interval: 1s
+      start_period: 0s
+
     container_name: mongo3
     command: ["mongod", "--replSet", "rs0"]
     ports:
@@ -55,13 +107,15 @@ services:
       - finance_net
     volumes:
       - ./data/mongo3:/data/db
+      - ./data/mongo1_config:/data/configdb
+
 
 #Frontend Services
   frontend1:
     image: nikola4/stock-liveview:latest
     container_name: frontend1
     environment:
-      - MONGO_URL=mongodb://mongo1:27017,mongo2:27017,mongo3:27017/stockmarket?replicaSet=rs0
+      - MONGO_URL=mongodb://mongo1:27017,mongo2:27018,mongo3:27019/stockmarket?replicaSet=rs0
     depends_on:
       - mongo1
       - mongo2
@@ -73,7 +127,7 @@ services:
     image: nikola4/stock-liveview:latest
     container_name: frontend2
     environment:
-      - MONGO_URL=mongodb://mongo1:27017,mongo2:27017,mongo3:27017/stockmarket?replicaSet=rs0
+      - MONGO_URL=mongodb://mongo1:27017,mongo2:27018,mongo3:27019/stockmarket?replicaSet=rs0
     depends_on:
       - mongo1
       - mongo2
@@ -100,9 +154,9 @@ services:
     image: nikola4/stock-consumer:latest
     container_name: consumer-aapl
     environment:
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - RABBITMQ_URL=amqp://admin:password@rabbitmq:5672/
       - RABBITMQ_QUEUE=AAPL
-      - MONGODB_URL=mongodb://mongo1:27017,mongo2:27017,mongo3:27017/stockmarket?replicaSet=rs0
+      - MONGO_URL=mongodb://mongo1:27017,mongo2:27018,mongo3:27019/stockmarket?replicaSet=rs0
     depends_on:
       - rabbitmq
       - mongo1
@@ -115,9 +169,9 @@ services:
     image: nikola4/stock-consumer:latest
     container_name: consumer-msft
     environment:
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - RABBITMQ_URL=amqp://admin:password@rabbitmq:5672/
       - RABBITMQ_QUEUE=MSFT
-      - MONGODB_URL=mongodb://mongo1:27017,mongo2:27017,mongo3:27017/stockmarket?replicaSet=rs0
+      - MONGO_URL=mongodb://mongo1:27017,mongo2:27018,mongo3:27019/stockmarket?replicaSet=rs0
     depends_on:
       - rabbitmq
       - mongo1
@@ -130,9 +184,9 @@ services:
     image: nikola4/stock-consumer:latest
     container_name: consumer-tsla
     environment:
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - RABBITMQ_URL=amqp://admin:password@rabbitmq:5672/
       - RABBITMQ_QUEUE=TSLA
-      - MONGODB_URL=mongodb://mongo1:27017,mongo2:27017,mongo3:27017/stockmarket?replicaSet=rs0
+      - MONGO_URL=mongodb://mongo1:27017,mongo2:27018,mongo3:27019/stockmarket?replicaSet=rs0
     depends_on:
       - rabbitmq
       - mongo1
