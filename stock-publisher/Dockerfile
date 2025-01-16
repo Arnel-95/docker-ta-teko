@@ -1,12 +1,17 @@
-# publisher/Dockerfile
-FROM golang:latest AS build
+# GoLang Image
+FROM golang:1.20-alpine
+ 
+# Verzeichnis setzen
 WORKDIR /app
+ 
 COPY . .
-RUN go build -o /stock-publisher . 
-
-FROM alpine:latest
-WORKDIR /app
-COPY --from=build /stock-publisher .
+ 
+# Build Application/Dependencies
+RUN go mod tidy && go build -o stock-publisher
+ 
+# Port-Mapping
 EXPOSE 8080
-# Hier kannst du weitere ENV-Variablen definieren, wenn nötig
-ENTRYPOINT ["/app/stock-publisher"]
+ 
+# Start
+CMD ["./stock-publisher"]
+ 

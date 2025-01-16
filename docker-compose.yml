@@ -4,22 +4,19 @@ services:
     image: rabbitmq:3-management
     container_name: rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: admin
-      RABBITMQ_DEFAULT_PASS: password
+      RABBITMQ_DEFAULT_USER: stockmarket
+      RABBITMQ_DEFAULT_PASS: supersecret123
     ports:
       - "5672:5672"     # AMQP-Port
       - "15672:15672"   # Management-UI
-    networks:
-      - finance_net
     restart: always
 
 #Publisher Service
   publisher:
     image: nikola4/stock-publisher:latest
     container_name: stock-publisher
-    
     environment:
-      - RABBITMQ_URL=amqp://admin:password@rabbitmq:5672/
+      - RABBITMQ_URL=amqp://stockmarket:supersecret123@rabbitmq:5672/
     depends_on:
       - rabbitmq
     networks:
@@ -27,7 +24,7 @@ services:
     restart: always
 
 # Mongo Datebanken Service
-  mongo1:
+ mongo1:
     image: mongo:6.0
 
     healthcheck:
@@ -49,8 +46,7 @@ services:
     command: ["mongod", "--replSet", "rs0"]
     ports:
       - "27017:27017"
-    networks:
-      - finance_net
+
     volumes:
       - ./data/mongo1:/data/db
       - ./data/mongo1_config:/data/configdb
@@ -79,8 +75,7 @@ services:
     command: ["mongod", "--replSet", "rs0"]
     ports:
       - "27018:27017"
-    networks:
-      - finance_net
+
     volumes:
       - ./data/mongo2:/data/db
       - ./data/mongo1_config:/data/configdb
@@ -109,59 +104,12 @@ services:
     command: ["mongod", "--replSet", "rs0"]
     ports:
       - "27019:27017"
-    networks:
-      - finance_net
+
     volumes:
       - ./data/mongo3:/data/db
       - ./data/mongo1_config:/data/configdb
 
     restart: always
-
-
-#Frontend Services
-  frontend1:
-    image: nikola4/stock-liveview:latest
-    container_name: frontend1
-    environment:
-      - MONGO_URL=mongodb://mongo1:27017,mongo2:27018,mongo3:27019/stockmarket?replicaSet=rs0
-    depends_on:
-      - mongo1
-      - mongo2
-      - mongo3
-    networks:
-      - finance_net
-
-    restart: always
-
-  frontend2:
-    image: nikola4/stock-liveview:latest
-    container_name: frontend2
-    environment:
-      - MONGO_URL=mongodb://mongo1:27017,mongo2:27018,mongo3:27019/stockmarket?replicaSet=rs0
-    depends_on:
-      - mongo1
-      - mongo2
-      - mongo3
-    networks:
-      - finance_net
-
-    restart: always
-
-#Nginx Load Balancer
-  loadbalancer:
-    image: nginx:alpine
-    container_name: loadbalancer
-    depends_on:
-      - frontend1
-      - frontend2
-    ports:
-      - "80:80"
-    volumes:
-      - ./loadbalancer/nginx.conf:/etc/nginx/nginx.conf:ro
-    networks:
-      - finance_net
-    restart: always
-
 #Consumer
   consumer-aapl:
     image: nikola4/stock-consumer:latest
@@ -175,8 +123,7 @@ services:
       - mongo1
       - mongo2
       - mongo3
-    networks:
-      - finance_net
+
     restart: always
 
   consumer-msft:
@@ -191,8 +138,7 @@ services:
       - mongo1
       - mongo2
       - mongo3
-    networks:
-      - finance_net
+
     restart: always
 
   consumer-tsla:
@@ -207,10 +153,5 @@ services:
       - mongo1
       - mongo2
       - mongo3
-    networks:
-      - finance_net
-    restart: always
 
-networks:
-  finance_net:
-    driver: bridge
+    restart: always
