@@ -1,5 +1,4 @@
 services:
-#RabbitMQ Service
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
@@ -7,11 +6,10 @@ services:
       RABBITMQ_DEFAULT_USER: stockmarket
       RABBITMQ_DEFAULT_PASS: supersecret123
     ports:
-      - "5672:5672"     # AMQP-Port
-      - "15672:15672"   # Management-UI
+      - "5672:5672"
+      - "15672:15672"
     restart: always
 
-#Publisher Service
   publisher:
     image: nikola4/stock-publisher:latest
     container_name: stock-publisher
@@ -19,103 +17,56 @@ services:
       - RABBITMQ_URL=amqp://stockmarket:supersecret123@rabbitmq:5672/
     depends_on:
       - rabbitmq
-    networks:
-      - finance_net
     restart: always
 
-# Mongo Datebanken Service
- mongo1:
+  mongo1:
     image: mongo:6.0
-
-    healthcheck:
-      test: >-
-        echo "try { rs.status() } catch (err) {
-        rs.initiate({_id:'rs0',members:[
-        {_id:0,host:'host.docker.internal:27017',priority:1},
-        {_id:1,host:'host.docker.internal:27018',priority:0.5},
-        {_id:2,host:'host.docker.internal:27019',priority:0.5}
-         ]})
-         }" | mongosh --port 27017 --quiet
-      interval: 5s
-      timeout: 30s
-      retries: 30
-      start_interval: 1s
-      start_period: 0s
-
     container_name: mongo1
     command: ["mongod", "--replSet", "rs0"]
     ports:
       - "27017:27017"
-
     volumes:
       - ./data/mongo1:/data/db
       - ./data/mongo1_config:/data/configdb
-
+    healthcheck:
+      test: >
+        echo "try { rs.status() } catch (err) { rs.initiate({ _id: 'rs0', members: [
+        { _id: 0, host: 'mongo1:27017', priority: 1 },
+        { _id: 1, host: 'mongo2:27017', priority: 0.5 },
+        { _id: 2, host: 'mongo3:27017', priority: 0.5 }
+        ] }) }" | mongosh --port 27017 --quiet
+      interval: 5s
+      timeout: 30s
+      retries: 10
     restart: always
-
 
   mongo2:
     image: mongo:6.0
-    healthcheck:
-      test: >-
-        echo "try { rs.status() } catch (err) {
-        rs.initiate({_id:'rs0',members:[
-        {_id:0,host:'host.docker.internal:27017',priority:1},
-        {_id:1,host:'host.docker.internal:27018',priority:0.5},
-        {_id:2,host:'host.docker.internal:27019',priority:0.5}
-         ]})
-         }" | mongosh --port 27017 --quiet
-      interval: 5s
-      timeout: 30s
-      retries: 30
-      start_interval: 1s
-      start_period: 0s
-
     container_name: mongo2
     command: ["mongod", "--replSet", "rs0"]
     ports:
       - "27018:27017"
-
     volumes:
       - ./data/mongo2:/data/db
       - ./data/mongo1_config:/data/configdb
-
     restart: always
-
 
   mongo3:
     image: mongo:6.0
-    healthcheck:
-      test: >-
-        echo "try { rs.status() } catch (err) {
-        rs.initiate({_id:'rs0',members:[
-        {_id:0,host:'host.docker.internal:27017',priority:1},
-        {_id:1,host:'host.docker.internal:27018',priority:0.5},
-        {_id:2,host:'host.docker.internal:27019',priority:0.5}
-         ]})
-         }" | mongosh --port 27017 --quiet
-      interval: 5s
-      timeout: 30s
-      retries: 30
-      start_interval: 1s
-      start_period: 0s
-
     container_name: mongo3
     command: ["mongod", "--replSet", "rs0"]
     ports:
       - "27019:27017"
-
     volumes:
       - ./data/mongo3:/data/db
       - ./data/mongo1_config:/data/configdb
-
     restart: always
-#Consumer
+
   consumer-aapl:
     image: nikola4/stock-consumer:latest
     container_name: consumer-aapl
     environment:
-      - RABBITMQ_URL=amqp://admin:password@rabbitmq:5672/
+      - RABBITMQ_URL=amqp://stockmarket:supersecret123@rabbitmq:5672/
       - RABBITMQ_QUEUE=AAPL
       - MONGO_URL=mongodb://mongo1:27017,mongo2:27018,mongo3:27019/stockmarket?replicaSet=rs0
     depends_on:
@@ -123,14 +74,13 @@ services:
       - mongo1
       - mongo2
       - mongo3
-
     restart: always
 
   consumer-msft:
     image: nikola4/stock-consumer:latest
     container_name: consumer-msft
     environment:
-      - RABBITMQ_URL=amqp://admin:password@rabbitmq:5672/
+      - RABBITMQ_URL=amqp://stockmarket:supersecret123@rabbitmq:5672/
       - RABBITMQ_QUEUE=MSFT
       - MONGO_URL=mongodb://mongo1:27017,mongo2:27018,mongo3:27019/stockmarket?replicaSet=rs0
     depends_on:
@@ -138,14 +88,13 @@ services:
       - mongo1
       - mongo2
       - mongo3
-
     restart: always
 
   consumer-tsla:
     image: nikola4/stock-consumer:latest
     container_name: consumer-tsla
     environment:
-      - RABBITMQ_URL=amqp://admin:password@rabbitmq:5672/
+      - RABBITMQ_URL=amqp://stockmarket:supersecret123@rabbitmq:5672/
       - RABBITMQ_QUEUE=TSLA
       - MONGO_URL=mongodb://mongo1:27017,mongo2:27018,mongo3:27019/stockmarket?replicaSet=rs0
     depends_on:
@@ -153,5 +102,4 @@ services:
       - mongo1
       - mongo2
       - mongo3
-
     restart: always
